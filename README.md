@@ -273,9 +273,9 @@ output := template.replace({
 If the `exclude` flag is set, the variable list will be treated the other way round - the listed variables will be considered just text literals and the others will be replaceable:
 
 ```go
-import prantlf.template { parse_replacer }
+import prantlf.template { ReplacerOpts, parse_replacer_opt }
 
-template := parse_replacer('# {title} ({date})', ReplacerOpts{
+template := parse_replacer_opt('# {title} ({date})', ReplacerOpts{
   vars: ['date']
   exclude: true
 })!
