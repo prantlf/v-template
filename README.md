@@ -234,6 +234,69 @@ template := parse_template('# {title}')!
 output := template.generate({
   'title': 'Overview'
 })
+// output: # Overview
+```
+
+### parse_replacer(template string) !Replacer
+
+Parses a template with a reduced syntax - only variables are supported. Returns a `Replacer` instance.
+
+```go
+import prantlf.template { parse_replacer }
+
+template := parse_replacer('# {title}')!
+```
+
+### parse_replacer_opt(template string, opts &ReplacerOpts) !Replacer
+
+Parses a template with a reduced syntax - only variables are supported. Returns a `Replacer` instance. Allows restricting the variable names for the replaceable placeholders using `ReplacerOpts`:
+
+| Field     | Type       | Default | Description                                |
+|:----------|:-----------|:--------|:-------------------------------------------|
+| `vars`    | `[]string` | `[]`    | list of variable names                     |
+| `exclude` | `bool`     | `false` | if the listed variables should be excluded |
+
+If the `vars` array isn't empty, only the listed variables will be considered for replacing. Other variable placeholders will be considered just text literals:
+
+```go
+import prantlf.template { parse_replacer }
+
+template := parse_replacer('# {title} ({date})', ReplacerOpts{
+  vars: ['title']
+})!
+output := template.replace({
+  'title': 'Overview'
+})
+// output: # Overview ({date})
+```
+
+If the `exclude` flag is set, the variable list will be treated the other way round - the listed variables will be considered just text literals and the others will be replaceable:
+
+```go
+import prantlf.template { parse_replacer }
+
+template := parse_replacer('# {title} ({date})', ReplacerOpts{
+  vars: ['date']
+  exclude: true
+})!
+output := template.replace({
+  'title': 'Overview'
+})
+// output: # Overview ({date})
+```
+
+### Replacer.replace(vars TemplateData) string
+
+Replaces variable placeholders in a template using the `vars` represented by a `TemplateData` implementation.
+
+```go
+import prantlf.template { parse_template }
+
+template := parse_replacer('# {title}')!
+output := template.replace({
+  'title': 'Overview'
+})
+// output: # Overview
 ```
 
 See the implementation of `TemplateData` for a map `string` to `string` in [abstractions] below.

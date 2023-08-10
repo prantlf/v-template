@@ -1,7 +1,7 @@
 #!/usr/bin/env -S v -prod run
 
 import benchmark { start }
-import prantlf.template { parse_template }
+import prantlf.template
 
 // fn (m map[string]string) has(name string) bool {
 //   return name in m
@@ -69,17 +69,17 @@ fn (d &MapData) get_more(name string) []string {
 }
 
 struct Data {
-	description     string = 'Ensure error location by custom parsing'
-	short_hash      string = '9757213'
-	hash            string = '9757213eda5de9684099024d0c4f59e4d4f59c97'
-	repo_url        string = 'https://github.com/prantlf/jsonlint'
+	description     string   = 'Ensure error location by custom parsing'
+	short_hash      string   = '9757213'
+	hash            string   = '9757213eda5de9684099024d0c4f59e4d4f59c97'
+	repo_url        string   = 'https://github.com/prantlf/jsonlint'
 	issues          []string = ['87', '95', '101']
 	breaking_change []string = [
-		'* Although you shouldn\'t notice any change on the behaviour of the command line, something unexpected might\'ve changed.',
-		'* The default environment recognises only JSON Schema drafts 06 and 07 automatically.',
-		'* Dropped support for Node.js 12. The minimum supported version is Node.js 14.',
-		'* If you used the property "exzerpt" from the parsing error object, you have to change it to "excerpt".'
-	]
+	"* Although you shouldn't notice any change on the behaviour of the command line, something unexpected might've changed.",
+	'* The default environment recognises only JSON Schema drafts 06 and 07 automatically.',
+	'* Dropped support for Node.js 12. The minimum supported version is Node.js 14.',
+	'* If you used the property "exzerpt" from the parsing error object, you have to change it to "excerpt".',
+]
 }
 
 fn (d &Data) has(name string) bool {
@@ -148,12 +148,12 @@ string_array_map := {
 	'short_hash':      ['9757213']
 	'hash':            ['9757213eda5de9684099024d0c4f59e4d4f59c97']
 	'repo_url':        ['https://github.com/prantlf/jsonlint']
-	'issues':          ['87', '95', '101'],
+	'issues':          ['87', '95', '101']
 	'BREAKING_CHANGE': [
-		'* Although you shouldn\'t notice any change on the behaviour of the command line, something unexpected might\'ve changed.',
+		"* Although you shouldn't notice any change on the behaviour of the command line, something unexpected might've changed.",
 		'* The default environment recognises only JSON Schema drafts 06 and 07 automatically.',
 		'* Dropped support for Node.js 12. The minimum supported version is Node.js 14.',
-		'* If you used the property "exzerpt" from the parsing error object, you have to change it to "excerpt".'
+		'* If you used the property "exzerpt" from the parsing error object, you have to change it to "excerpt".',
 	]
 }
 
@@ -165,12 +165,12 @@ two_map := MapData{
 		'repo_url':    'https://github.com/prantlf/jsonlint'
 	}
 	arrays: {
-		'issues':          ['87', '95', '101'],
+		'issues':          ['87', '95', '101']
 		'BREAKING_CHANGE': [
-			'* Although you shouldn\'t notice any change on the behaviour of the command line, something unexpected might\'ve changed.',
+			"* Although you shouldn't notice any change on the behaviour of the command line, something unexpected might've changed.",
 			'* The default environment recognises only JSON Schema drafts 06 and 07 automatically.',
 			'* Dropped support for Node.js 12. The minimum supported version is Node.js 14.',
-			'* If you used the property "exzerpt" from the parsing error object, you have to change it to "excerpt".'
+			'* If you used the property "exzerpt" from the parsing error object, you have to change it to "excerpt".',
 		]
 	}
 }
@@ -193,8 +193,8 @@ assert string_array_map.get_more('issues') == ['87', '95', '101']
 assert two_map.get_more('issues') == ['87', '95', '101']
 assert struct_data.get_more('issues') == ['87', '95', '101']
 
-mut f := []bool{ cap: repeat_count * 4 }
-mut s := []string{ cap: repeat_count * 7 }
+mut f := []bool{cap: repeat_count * 4}
+mut s := []string{cap: repeat_count * 7}
 
 mut b := start()
 

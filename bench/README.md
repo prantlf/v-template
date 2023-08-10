@@ -3,19 +3,22 @@
 The more complicated the template becomes, the faster is the compiled version. Not speaking about the vastly incomplete functionality of the interpreted version for this benchmark. Replacing placeholders in a loop is added just for comparison how slow it is:
 
     ❯ ./bench/bench-engine.vsh
-     SPENT   127.275 ms in literal replaced
-     SPENT   117.054 ms in literal interpreted
-     SPENT   564.426 ms in literal compiled
-     SPENT  1899.587 ms in variable replaced
-     SPENT   740.287 ms in variable interpreted
-     SPENT   593.109 ms in variable compiled
-     SPENT   247.030 ms in loop interpreted
-     SPENT   172.086 ms in loop compiled
-     SPENT  2581.635 ms in version replaced
-     SPENT   545.186 ms in version interpreted
-     SPENT   496.592 ms in version compiled
-     SPENT  1845.515 ms in commit interpreted
-     SPENT  1210.958 ms in commit compiled
+     SPENT   140.147 ms in literal replaced
+     SPENT   134.651 ms in literal interpreted
+     SPENT   596.321 ms in literal compiled template
+     SPENT   498.110 ms in literal compiled replacer
+     SPENT  1927.581 ms in variable replaced
+     SPENT   734.509 ms in variable interpreted
+     SPENT   584.025 ms in variable compiled template
+     SPENT   512.390 ms in variable compiled replacer
+     SPENT   239.992 ms in loop interpreted
+     SPENT   171.463 ms in loop compiled template
+     SPENT  2325.957 ms in version replaced
+     SPENT   516.118 ms in version interpreted
+     SPENT   473.142 ms in version compiled template
+     SPENT   381.282 ms in version compiled replacer
+     SPENT  1961.059 ms in commit interpreted
+     SPENT  1178.638 ms in commit compiled template
 
 A structure with six fields is faster or on par with a string map:
 

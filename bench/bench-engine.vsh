@@ -2,7 +2,8 @@
 
 import benchmark { start }
 import strings { Builder, new_builder }
-import prantlf.template { parse_template }
+import prantlf.strutil { index_u8_within }
+import prantlf.template { parse_replacer, parse_template }
 
 fn (m map[string][]string) has(name string) bool {
 	return name in m
@@ -58,7 +59,7 @@ fn fill(tpl string, vars map[string][]string) !string {
 	for {
 		if open == 0 || tpl[open - 1] != `\\` {
 			unsafe { builder.write_ptr(tpl.str + close, open - close) }
-			close = index_of(tpl, `}`, open + 1, stop)
+			close = index_u8_within(tpl, `}`, open + 1, stop)
 			if close < 0 {
 				return error('missing closing brace after ${open}')
 			}
@@ -108,7 +109,7 @@ fn fill(tpl string, vars map[string][]string) !string {
 			close = open + 1
 		}
 
-		open = index_of(tpl, `{`, open + 1, stop)
+		open = index_u8_within(tpl, `{`, open + 1, stop)
 		if open < 0 {
 			unsafe { builder.write_ptr(tpl.str + close, stop - close) }
 			break
@@ -119,7 +120,7 @@ fn fill(tpl string, vars map[string][]string) !string {
 }
 
 fn fill_block(mut builder Builder, tpl string, start int, stop int, value string, index int, length int, vars map[string][]string) ! {
-	mut open := index_of(tpl, `{`, start, stop)
+	mut open := index_u8_within(tpl, `{`, start, stop)
 	if open < 0 {
 		unsafe { builder.write_ptr(tpl.str + start, stop - start) }
 		return
@@ -129,7 +130,7 @@ fn fill_block(mut builder Builder, tpl string, start int, stop int, value string
 	for {
 		if tpl[open - 1] != `\\` {
 			unsafe { builder.write_ptr(tpl.str + close, open - close) }
-			close = index_of(tpl, `}`, open + 1, stop)
+			close = index_u8_within(tpl, `}`, open + 1, stop)
 			if close < 0 {
 				return error('missing closing brace after ${open}')
 			}
@@ -234,7 +235,7 @@ fn fill_block(mut builder Builder, tpl string, start int, stop int, value string
 			close = open + 1
 		}
 
-		open = index_of(tpl, `{`, open + 1, stop)
+		open = index_u8_within(tpl, `{`, open + 1, stop)
 		if open < 0 {
 			unsafe { builder.write_ptr(tpl.str + close, stop - close) }
 			break
@@ -287,9 +288,9 @@ fn find_end(tpl string, op string, start int, stop int) !int {
 }
 
 [direct_array_access]
-fn index_of(s string, c u8, start int, stop int) int {
+fn index_u8_within(s string, c u8, start int, stop int) int {
 	for i := start; i < stop; i++ {
-		if unsafe { s.str[i] == c } {
+		if s[i] == c {
 			return i
 		}
 	}
@@ -297,14 +298,17 @@ fn index_of(s string, c u8, start int, stop int) int {
 }
 
 const repeat_count = 10000000
+
 const repeat_count2 = 1000000
 
 s1 := 'test'
 t1 := parse_template(s1)!
+r1 := parse_replacer(s1)!
 m1 := map[string][]string{}
 
 s2 := '{text}'
 t2 := parse_template(s2)!
+r2 := parse_replacer(s2)!
 m2 := {
 	'text': ['test']
 }
@@ -318,6 +322,7 @@ m3 := {
 
 s4 := '{heading} [{version}]({repo_url}/compare/{tag_prefix}{prev_version}...{tag_prefix}{version}) ({date})'
 t4 := parse_template(s4)!
+r4 := parse_replacer(s4)!
 m4 := {
 	'heading':      ['##']
 	'date':         ['2023-04-27']
@@ -355,7 +360,12 @@ b.measure('literal interpreted')
 for _ in 0 .. repeat_count {
 	t1.generate(m1)
 }
-b.measure('literal compiled')
+b.measure('literal compiled template')
+
+for _ in 0 .. repeat_count {
+	r1.replace(m1)
+}
+b.measure('literal compiled replacer')
 
 for _ in 0 .. repeat_count {
 	replace(s2, m2)!
@@ -370,7 +380,12 @@ b.measure('variable interpreted')
 for _ in 0 .. repeat_count {
 	t2.generate(m2)
 }
-b.measure('variable compiled')
+b.measure('variable compiled template')
+
+for _ in 0 .. repeat_count {
+	r2.replace(m2)
+}
+b.measure('variable compiled replacer')
 
 for _ in 0 .. repeat_count2 {
 	fill(s31, m3)!
@@ -380,7 +395,7 @@ b.measure('loop interpreted')
 for _ in 0 .. repeat_count2 {
 	t3.generate(m3)
 }
-b.measure('loop compiled')
+b.measure('loop compiled template')
 
 for _ in 0 .. repeat_count2 {
 	replace(s4, m4)!
@@ -395,7 +410,12 @@ b.measure('version interpreted')
 for _ in 0 .. repeat_count2 {
 	t4.generate(m4)
 }
-b.measure('version compiled')
+b.measure('version compiled template')
+
+for _ in 0 .. repeat_count2 {
+	r4.replace(m4)
+}
+b.measure('version compiled replacer')
 
 for _ in 0 .. repeat_count2 {
 	fill(s51, m5)!
@@ -405,4 +425,4 @@ b.measure('commit interpreted')
 for _ in 0 .. repeat_count2 {
 	t5.generate(m5)
 }
-b.measure('commit compiled')
+b.measure('commit compiled template')

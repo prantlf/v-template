@@ -1,6 +1,6 @@
 struct Data {
-	description string = '42'
-	issues []string = ['#87', '#101']
+	description string   = '42'
+	issues      []string = ['#87', '#101']
 }
 
 fn (d &Data) has(name string) bool {

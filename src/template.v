@@ -1,6 +1,7 @@
 module template
 
 import strings { Builder, new_builder }
+import prantlf.strutil { contains_at, index_u8_within, skip_space, skip_trailing_space }
 
 struct Literal {
 	start int
@@ -61,7 +62,7 @@ struct Last {
 
 struct End {}
 
-type Part = End
+type TemplatePart = End
 	| First
 	| For
 	| If
@@ -77,12 +78,12 @@ type Part = End
 	| Value
 	| Variable
 
-type Appender = fn (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int)
+type TemplateAppender = fn (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int)
 
 [noinit]
 pub struct Template {
 	template_len int
-	appenders    []Appender
+	appenders    []TemplateAppender
 }
 
 pub interface TemplateData {
@@ -102,8 +103,8 @@ pub fn (t &Template) generate(vars TemplateData) string {
 pub fn parse_template(template string) !&Template {
 	parts, needs_depth := scan_template(template)!
 
-	mut appenders := []Appender{cap: parts.len}
-	parse_block(template, parts, 0, parts.len, mut appenders, needs_depth)
+	mut appenders := []TemplateAppender{cap: parts.len}
+	parse_template_block(template, parts, 0, parts.len, mut appenders, needs_depth)
 
 	return &Template{
 		template_len: template.len
@@ -111,15 +112,15 @@ pub fn parse_template(template string) !&Template {
 	}
 }
 
-fn scan_template(template string) !([]Part, bool) {
-	mut parts := []Part{cap: 8}
+fn scan_template(template string) !([]TemplatePart, bool) {
+	mut parts := []TemplatePart{cap: 8}
 	mut needs_depth := false
 	stop := template.len
 	mut open := -1
 	mut close := 0
 	mut depth := 0
 	for {
-		open = index_of(template, `{`, open + 1, stop)
+		open = index_u8_within(template, `{`, open + 1, stop)
 		if open < 0 {
 			try_add_literal(mut parts, close, stop)
 			break
@@ -128,13 +129,13 @@ fn scan_template(template string) !([]Part, bool) {
 		if open == 0 || template[open - 1] != `\\` {
 			try_add_literal(mut parts, close, open)
 
-			close = index_of(template, `}`, open + 1, stop)
+			close = index_u8_within(template, `}`, open + 1, stop)
 			if close < 0 {
 				return error('missing } for { at ${open}')
 			}
 
-			name_start := skip_spaces(template, open + 1, close)
-			name_end := skip_trailing_spaces(template, name_start, close)
+			name_start := skip_space(template, open + 1, close)
+			name_end := skip_trailing_space(template, name_start, close)
 			mut name := template[name_start..name_end]
 
 			start := open
@@ -144,7 +145,7 @@ fn scan_template(template string) !([]Part, bool) {
 			space := name.index_u8(` `)
 			if space > 0 {
 				op := name[..space]
-				name_start2 := skip_spaces(name, space + 1, name.len)
+				name_start2 := skip_space(name, space + 1, name.len)
 				name = name[name_start2..]
 				if name.len == 0 {
 					return error('missing operand for {${op}} at ${start}')
@@ -259,7 +260,7 @@ fn scan_template(template string) !([]Part, bool) {
 	return parts, needs_depth
 }
 
-fn try_add_literal(mut parts []Part, start int, stop int) {
+fn try_add_literal[T](mut parts []T, start int, stop int) {
 	len := stop - start
 	if len > 0 {
 		parts << Literal{
@@ -269,7 +270,7 @@ fn try_add_literal(mut parts []Part, start int, stop int) {
 	}
 }
 
-fn parse_block(template string, parts []Part, start int, stop int, mut appenders []Appender, needs_depth bool) {
+fn parse_template_block(template string, parts []TemplatePart, start int, stop int, mut appenders []TemplateAppender, needs_depth bool) {
 	for i := start; i < stop; i++ {
 		part := parts[i]
 		match part {
@@ -441,9 +442,9 @@ fn parse_block(template string, parts []Part, start int, stop int, mut appenders
 						mut inner_vals := unsafe { &[]string(nil) }
 						mut inner_idxs := unsafe { &[]int(nil) }
 						if needs_depth {
-							mut vals_clone := clone_and_shift(vals)
+							mut vals_clone := clone_and_shift(vals, 1)
 							inner_vals = &vals_clone
-							mut idxs_clone := clone_and_shift(idxs)
+							mut idxs_clone := clone_and_shift(idxs, 1)
 							inner_idxs = &idxs_clone
 						} else {
 							inner_vals = &['']
@@ -469,14 +470,14 @@ fn parse_block(template string, parts []Part, start int, stop int, mut appenders
 	}
 }
 
-fn parse_sub_block(template string, parts []Part, start int, stop int, needs_depth bool) ([]Appender, int) {
+fn parse_sub_block(template string, parts []TemplatePart, start int, stop int, needs_depth bool) ([]TemplateAppender, int) {
 	end := find_end(parts, start, stop)
-	mut sub_appenders := []Appender{cap: end - start - 1}
-	parse_block(template, parts, start, end, mut sub_appenders, needs_depth)
+	mut sub_appenders := []TemplateAppender{cap: end - start - 1}
+	parse_template_block(template, parts, start, end, mut sub_appenders, needs_depth)
 	return sub_appenders, end
 }
 
-fn find_end(parts []Part, start int, stop int) int {
+fn find_end(parts []TemplatePart, start int, stop int) int {
 	mut depth := 0
 	for i := start; i < stop; i++ {
 		part := parts[i]
@@ -552,7 +553,7 @@ fn get_values(name string, vars TemplateData, vals []string, idxs []int) []strin
 
 fn get_name_with_depth(name string) (string, int) {
 	mut depth := 0
-	for starts_with(name, '../', depth) {
+	for contains_at(name, '../', depth) {
 		depth += 3
 	}
 	if depth > 0 {
@@ -589,53 +590,10 @@ fn get_name_with_depth(name string) (string, int) {
 // 	}
 // }
 
-pub fn clone_and_shift[T](src []T) []T {
-	mut dst := []T{len: src.len + 1}
+fn clone_and_shift[T](src []T, n int) []T {
+	mut dst := []T{len: src.len + n}
 	if src.len > 0 {
-		unsafe { vmemmove(&u8(dst.data) + sizeof(T), src.data, u64(src.len) * sizeof(T)) }
+		unsafe { vmemmove(&u8(dst.data) + u64(n) * sizeof(T), src.data, u64(src.len) * sizeof(T)) }
 	}
 	return dst
-}
-
-[direct_array_access]
-fn starts_with(s string, p string, start int) bool {
-	if p.len > s.len - start {
-		return false
-	}
-	for i in 0 .. p.len {
-		if unsafe { s.str[start + i] != p.str[i] } {
-			return false
-		}
-	}
-	return true
-}
-
-[direct_array_access]
-fn index_of(s string, c u8, start int, stop int) int {
-	for i := start; i < stop; i++ {
-		if unsafe { s.str[i] == c } {
-			return i
-		}
-	}
-	return -1
-}
-
-[direct_array_access]
-fn skip_spaces(s string, start int, stop int) int {
-	for i := start; i < stop; i++ {
-		if unsafe { s.str[i] != ` ` } {
-			return i
-		}
-	}
-	return stop
-}
-
-[direct_array_access]
-fn skip_trailing_spaces(s string, start int, stop int) int {
-	for i := stop - 1; i > start; i-- {
-		if unsafe { s.str[i] != ` ` } {
-			return i + 1
-		}
-	}
-	return start
 }
