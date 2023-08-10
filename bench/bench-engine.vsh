@@ -38,6 +38,14 @@ fn (m map[string][]string) get_more(name string) []string {
 // 	}
 // }
 
+fn replace(tpl string, vars map[string][]string) !string {
+	mut out := tpl
+	for name, val in vars {
+		out = out.replace('{${name}}', val[0])
+	}
+	return out
+}
+
 fn fill(tpl string, vars map[string][]string) !string {
 	mut open := tpl.index_u8(`{`)
 	if open < 0 {
@@ -289,6 +297,7 @@ fn index_of(s string, c u8, start int, stop int) int {
 }
 
 const repeat_count = 10000000
+const repeat_count2 = 1000000
 
 s1 := 'test'
 t1 := parse_template(s1)!
@@ -310,14 +319,13 @@ m3 := {
 s4 := '{heading} [{version}]({repo_url}/compare/{tag_prefix}{prev_version}...{tag_prefix}{version}) ({date})'
 t4 := parse_template(s4)!
 m4 := {
-  'heading': ['##']
-  'date': ['2023-04-27']
-  'prev_version': ['14.0.2']
-  'version': ['14.0.3']
-  'tag_prefix': ['v']
-  'repo_url': ['https://github.com/prantlf/jsonlint']
+	'heading':      ['##']
+	'date':         ['2023-04-27']
+	'prev_version': ['14.0.2']
+	'version':      ['14.0.3']
+	'tag_prefix':   ['v']
+	'repo_url':     ['https://github.com/prantlf/jsonlint']
 }
-
 
 s51 := '* {description} ([{short_hash}]({repo_url}/commit/{hash})){if issues}
   fixes [{for issues}{middle}), [{elddim}{notfirst}{last}) and [{tsal}{tsrifton}#{value}]({repo_url}/issues/{value}{rof}){fi}'
@@ -325,14 +333,19 @@ s52 := '* {description} ([{short_hash}]({repo_url}/commit/{hash})){#if issues}
   fixes [{#for issues}{#middle}), [{#end}{#notfirst}{#last}) and [{#end}{#end}#{#value}]({repo_url}/issues/{#value}{#end}){#end}'
 t5 := parse_template(s52)!
 m5 := {
-  'description': ['Ensure error location by custom parsing']
-  'short_hash': ['9757213']
-  'hash': ['9757213eda5de9684099024d0c4f59e4d4f59c97']
-  'repo_url': ['https://github.com/prantlf/jsonlint']
-  'issues': ['87', '95', '101']
+	'description': ['Ensure error location by custom parsing']
+	'short_hash':  ['9757213']
+	'hash':        ['9757213eda5de9684099024d0c4f59e4d4f59c97']
+	'repo_url':    ['https://github.com/prantlf/jsonlint']
+	'issues':      ['87', '95', '101']
 }
 
 mut b := start()
+
+for _ in 0 .. repeat_count {
+	replace(s1, m1)!
+}
+b.measure('literal replaced')
 
 for _ in 0 .. repeat_count {
 	fill(s1, m1)!
@@ -345,6 +358,11 @@ for _ in 0 .. repeat_count {
 b.measure('literal compiled')
 
 for _ in 0 .. repeat_count {
+	replace(s2, m2)!
+}
+b.measure('variable replaced')
+
+for _ in 0 .. repeat_count {
 	fill(s2, m2)!
 }
 b.measure('variable interpreted')
@@ -354,32 +372,37 @@ for _ in 0 .. repeat_count {
 }
 b.measure('variable compiled')
 
-for _ in 0 .. repeat_count {
+for _ in 0 .. repeat_count2 {
 	fill(s31, m3)!
 }
 b.measure('loop interpreted')
 
-for _ in 0 .. repeat_count {
+for _ in 0 .. repeat_count2 {
 	t3.generate(m3)
 }
 b.measure('loop compiled')
 
-for _ in 0 .. repeat_count {
+for _ in 0 .. repeat_count2 {
+	replace(s4, m4)!
+}
+b.measure('version replaced')
+
+for _ in 0 .. repeat_count2 {
 	fill(s4, m4)!
 }
-b.measure('heading interpreted')
+b.measure('version interpreted')
 
-for _ in 0 .. repeat_count {
+for _ in 0 .. repeat_count2 {
 	t4.generate(m4)
 }
-b.measure('heading compiled')
+b.measure('version compiled')
 
-for _ in 0 .. repeat_count {
+for _ in 0 .. repeat_count2 {
 	fill(s51, m5)!
 }
 b.measure('commit interpreted')
 
-for _ in 0 .. repeat_count {
+for _ in 0 .. repeat_count2 {
 	t5.generate(m5)
 }
 b.measure('commit compiled')

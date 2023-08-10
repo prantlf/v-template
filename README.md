@@ -250,7 +250,7 @@ interface TemplateData {
 }
 ```
 
-For example a map `string` to `string`:
+For [example](src/string_map_test.v), a map `string` to `string`:
 
 ```go
 fn (m map[string]string) has(name string) bool {
@@ -263,14 +263,14 @@ fn (m map[string]string) get_one(name string) string {
 
 fn (m map[string]string) get_more(name string) []string {
   return if name in m {
-    m[name]
+    [m[name]]
   } else {
     []
   }
 }
 ```
 
-For example a map `string` to `[]string`:
+For [example](src/string_array_map_test.v), a map `string` to `[]string`:
 
 ```go
 fn (m map[string][]string) has(name string) bool {
@@ -291,19 +291,19 @@ fn (m map[string][]string) get_more(name string) []string {
 }
 ```
 
-For example a struct `Data` with separate maps `string` to `string` and `string` to `[]string`:
+For [example](src/two_maps_test.v), a struct `MapData` with separate maps `string` to `string` and `string` to `[]string`:
 
 ```go
-struct Data {
+struct MapData {
   singles map[string]string
   arrays map[string][]string
 }
 
-fn (d &Data) has(name string) bool {
+fn (d &MapData) has(name string) bool {
   return name in d.singles || name in d.arrays
 }
 
-fn (d &Data) get_one(name string) string {
+fn (d &MapData) get_one(name string) string {
   return if name in d.singles {
     d.singles[name]
   } else {
@@ -316,14 +316,75 @@ fn (d &Data) get_one(name string) string {
   }
 }
 
-fn (d &Data) get_more(name string) []string {
+fn (d &MapData) get_more(name string) []string {
   return if name in d.arrays {
     d.arrays[name]
   } else if name in d.singles {
-    [d.singles]
+    [d.singles[name]]
   } else {
-    []
+    []string{}
   }
+}
+```
+
+For [example](src/struct_test.v), a struct `Data` with fields of types `string` and `[]string` instead of a map:
+
+```go
+struct Data {
+	description string
+	issues []string
+}
+
+fn (d &Data) has(name string) bool {
+	return has_field(d, name)
+}
+
+fn (d &Data) get_one(name string) string {
+	return get_one_field(d, name)
+}
+
+fn (d &Data) get_more(name string) []string {
+	return get_more_field(d, name)
+}
+
+fn has_field[T](data &T, name string) bool {
+	$for field in T.fields {
+		if field.name == name {
+			return true
+		}
+	}
+	return false
+}
+
+fn get_one_field[T](data &T, name string) string {
+	$for field in T.fields {
+		if field.name == name {
+			$if field.is_array {
+				val := data.$(field.name)
+				return if val.len > 0 {
+					val[0]
+				} else {
+					''
+				}
+			} $else $if field.typ is string {
+				return data.$(field.name)
+			}
+		}
+	}
+	return ''
+}
+
+fn get_more_field[T](data &T, name string) []string {
+	$for field in T.fields {
+		if field.name == name {
+			$if field.is_array {
+				return data.$(field.name)
+			} $else $if field.typ is string {
+				return [data.$(field.name)]
+			}
+		}
+	}
+	return []
 }
 ```
 
