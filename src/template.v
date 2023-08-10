@@ -82,7 +82,7 @@ type TemplateAppender = fn (mut builder Builder, vars TemplateData, vals []strin
 
 [noinit]
 pub struct Template {
-	template_len int
+	source_len int
 	appenders    []TemplateAppender
 }
 
@@ -93,50 +93,50 @@ pub interface TemplateData {
 }
 
 pub fn (t &Template) generate(vars TemplateData) string {
-	mut builder := new_builder(t.template_len)
+	mut builder := new_builder(t.source_len)
 	for appender in t.appenders {
 		appender(mut builder, vars, [], [], 0)
 	}
 	return builder.str()
 }
 
-pub fn parse_template(template string) !&Template {
-	parts, needs_depth := scan_template(template)!
+pub fn parse_template(source string) !&Template {
+	parts, needs_depth := scan_template(source)!
 
 	mut appenders := []TemplateAppender{cap: parts.len}
-	parse_template_block(template, parts, 0, parts.len, mut appenders, needs_depth)
+	parse_template_block(source, parts, 0, parts.len, mut appenders, needs_depth)
 
 	return &Template{
-		template_len: template.len
+		source_len: source.len
 		appenders: appenders
 	}
 }
 
-fn scan_template(template string) !([]TemplatePart, bool) {
+fn scan_template(source string) !([]TemplatePart, bool) {
 	mut parts := []TemplatePart{cap: 8}
 	mut needs_depth := false
-	stop := template.len
+	stop := source.len
 	mut open := -1
 	mut close := 0
 	mut depth := 0
 	for {
-		open = index_u8_within(template, `{`, open + 1, stop)
+		open = index_u8_within(source, `{`, open + 1, stop)
 		if open < 0 {
 			try_add_literal(mut parts, close, stop)
 			break
 		}
 
-		if open == 0 || template[open - 1] != `\\` {
+		if open == 0 || source[open - 1] != `\\` {
 			try_add_literal(mut parts, close, open)
 
-			close = index_u8_within(template, `}`, open + 1, stop)
+			close = index_u8_within(source, `}`, open + 1, stop)
 			if close < 0 {
 				return error('missing } for { at ${open}')
 			}
 
-			name_start := skip_space(template, open + 1, close)
-			name_end := skip_trailing_space(template, name_start, close)
-			mut name := template[name_start..name_end]
+			name_start := skip_space(source, open + 1, close)
+			name_end := skip_trailing_space(source, name_start, close)
+			mut name := source[name_start..name_end]
 
 			start := open
 			open = close
@@ -270,12 +270,12 @@ fn try_add_literal[T](mut parts []T, start int, stop int) {
 	}
 }
 
-fn parse_template_block(template string, parts []TemplatePart, start int, stop int, mut appenders []TemplateAppender, needs_depth bool) {
+fn parse_template_block(source string, parts []TemplatePart, start int, stop int, mut appenders []TemplateAppender, needs_depth bool) {
 	for i := start; i < stop; i++ {
 		part := parts[i]
 		match part {
 			Literal {
-				t := template
+				t := source
 				s := part.start
 				l := part.len
 				appenders << fn [t, s, l] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
@@ -289,7 +289,7 @@ fn parse_template_block(template string, parts []TemplatePart, start int, stop i
 			}
 			First {
 				depth := part.depth
-				sub_appenders, end := parse_sub_block(template, parts, i + 1, stop, needs_depth)
+				sub_appenders, end := parse_sub_block(source, parts, i + 1, stop, needs_depth)
 				appenders << fn [sub_appenders, depth] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					idx := get_index(idxs, depth)
 					if idx == 0 {
@@ -302,7 +302,7 @@ fn parse_template_block(template string, parts []TemplatePart, start int, stop i
 			}
 			NotFirst {
 				depth := part.depth
-				sub_appenders, end := parse_sub_block(template, parts, i + 1, stop, needs_depth)
+				sub_appenders, end := parse_sub_block(source, parts, i + 1, stop, needs_depth)
 				appenders << fn [sub_appenders, depth] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					idx := get_index(idxs, depth)
 					if idx > 0 {
@@ -315,7 +315,7 @@ fn parse_template_block(template string, parts []TemplatePart, start int, stop i
 			}
 			Middle {
 				depth := part.depth
-				sub_appenders, end := parse_sub_block(template, parts, i + 1, stop, needs_depth)
+				sub_appenders, end := parse_sub_block(source, parts, i + 1, stop, needs_depth)
 				appenders << fn [sub_appenders, depth] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					idx := get_index(idxs, depth)
 					if idx > 0 && idx + 1 != len {
@@ -328,7 +328,7 @@ fn parse_template_block(template string, parts []TemplatePart, start int, stop i
 			}
 			NotLast {
 				depth := part.depth
-				sub_appenders, end := parse_sub_block(template, parts, i + 1, stop, needs_depth)
+				sub_appenders, end := parse_sub_block(source, parts, i + 1, stop, needs_depth)
 				appenders << fn [sub_appenders, depth] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					idx := get_index(idxs, depth)
 					if idx >= 0 && idx + 1 < len {
@@ -341,7 +341,7 @@ fn parse_template_block(template string, parts []TemplatePart, start int, stop i
 			}
 			Last {
 				depth := part.depth
-				sub_appenders, end := parse_sub_block(template, parts, i + 1, stop, needs_depth)
+				sub_appenders, end := parse_sub_block(source, parts, i + 1, stop, needs_depth)
 				appenders << fn [sub_appenders, depth] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					idx := get_index(idxs, depth)
 					if idx >= 0 && idx + 1 == len {
@@ -406,7 +406,7 @@ fn parse_template_block(template string, parts []TemplatePart, start int, stop i
 			}
 			If {
 				name := part.name
-				sub_appenders, end := parse_sub_block(template, parts, i + 1, stop, needs_depth)
+				sub_appenders, end := parse_sub_block(source, parts, i + 1, stop, needs_depth)
 				appenders << fn [sub_appenders, name] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					// if val := get_values(name, vars, vals, idxs) {
 					val := get_value(name, vars, vals, idxs)
@@ -420,7 +420,7 @@ fn parse_template_block(template string, parts []TemplatePart, start int, stop i
 			}
 			Unless {
 				name := part.name
-				sub_appenders, end := parse_sub_block(template, parts, i + 1, stop, needs_depth)
+				sub_appenders, end := parse_sub_block(source, parts, i + 1, stop, needs_depth)
 				appenders << fn [sub_appenders, name] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					// if get_values(name, vars, vals, idxs) == none {
 					val := get_value(name, vars, vals, idxs)
@@ -434,7 +434,7 @@ fn parse_template_block(template string, parts []TemplatePart, start int, stop i
 			}
 			For {
 				name := part.name
-				sub_appenders, end := parse_sub_block(template, parts, i + 1, stop, needs_depth)
+				sub_appenders, end := parse_sub_block(source, parts, i + 1, stop, needs_depth)
 				appenders << fn [sub_appenders, name, needs_depth] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					// if items := get_values(name, vars, vals, idxs) {
 					items := get_values(name, vars, vals, idxs)
@@ -470,10 +470,10 @@ fn parse_template_block(template string, parts []TemplatePart, start int, stop i
 	}
 }
 
-fn parse_sub_block(template string, parts []TemplatePart, start int, stop int, needs_depth bool) ([]TemplateAppender, int) {
+fn parse_sub_block(source string, parts []TemplatePart, start int, stop int, needs_depth bool) ([]TemplateAppender, int) {
 	end := find_end(parts, start, stop)
 	mut sub_appenders := []TemplateAppender{cap: end - start - 1}
-	parse_template_block(template, parts, start, end, mut sub_appenders, needs_depth)
+	parse_template_block(source, parts, start, end, mut sub_appenders, needs_depth)
 	return sub_appenders, end
 }
 

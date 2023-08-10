@@ -213,7 +213,7 @@ An trailing directive - `{#end}` - to end block directives `if`, `unless`, `for`
 
 The following functions and types are exported:
 
-### parse_template(template string) !Template
+### parse_template(source string) !Template
 
 Parses a template string and returns a `Template` instance.
 
@@ -237,7 +237,7 @@ output := template.generate({
 // output: # Overview
 ```
 
-### parse_replacer(template string) !Replacer
+### parse_replacer(source string) !Replacer
 
 Parses a template with a reduced syntax - only variables are supported. Returns a `Replacer` instance.
 
@@ -247,7 +247,7 @@ import prantlf.template { parse_replacer }
 template := parse_replacer('# {title}')!
 ```
 
-### parse_replacer_opt(template string, opts &ReplacerOpts) !Replacer
+### parse_replacer_opt(source string, opts &ReplacerOpts) !Replacer
 
 Parses a template with a reduced syntax - only variables are supported. Returns a `Replacer` instance. Allows restricting the variable names for the replaceable placeholders using `ReplacerOpts`:
 
