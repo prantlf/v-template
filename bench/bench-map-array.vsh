@@ -162,13 +162,40 @@ fn fill_block(mut builder Builder, tpl string, start int, stop int, value string
 				}
 			} else {
 				match name {
-					'next' {
-						end := find_end(tpl, '{txen}', open, stop)!
-						if index > 0 {
+					'first' {
+						end := find_end(tpl, '{tsrif}', open, stop)!
+						if index == 0 {
 							fill_block(mut builder, tpl, close, end, value, index, length,
 								vars)!
 						}
 						open = end + 5
+						close = open + 1
+					}
+					'notfirst' {
+						end := find_end(tpl, '{tsrifton}', open, stop)!
+						if index > 0 {
+							fill_block(mut builder, tpl, close, end, value, index, length,
+								vars)!
+						}
+						open = end + 9
+						close = open + 1
+					}
+					'middle' {
+						end := find_end(tpl, '{elddim}', open, stop)!
+						if index > 0 && index + 1 < length {
+							fill_block(mut builder, tpl, close, end, value, index, length,
+								vars)!
+						}
+						open = end + 7
+						close = open + 1
+					}
+					'notlast' {
+						end := find_end(tpl, '{tsalton}', open, stop)!
+						if index + 1 < length {
+							fill_block(mut builder, tpl, close, end, value, index, length,
+								vars)!
+						}
+						open = end + 8
 						close = open + 1
 					}
 					'last' {
@@ -280,6 +307,31 @@ m3 := {
 	'text': ['test1', 'test2']
 }
 
+s4 := '{heading} [{version}]({repo_url}/compare/{tag_prefix}{prev_version}...{tag_prefix}{version}) ({date})'
+t4 := parse_template(s4)!
+m4 := {
+  'heading': ['##']
+  'date': ['2023-04-27']
+  'prev_version': ['14.0.2']
+  'version': ['14.0.3']
+  'tag_prefix': ['v']
+  'repo_url': ['https://github.com/prantlf/jsonlint']
+}
+
+
+s51 := '* {description} ([{short_hash}]({repo_url}/commit/{hash})){if issues}
+  fixes [{for issues}{middle}), [{elddim}{notfirst}{last}) and [{tsal}{tsrifton}#{value}]({repo_url}/issues/{value}{rof}){fi}'
+s52 := '* {description} ([{short_hash}]({repo_url}/commit/{hash})){#if issues}
+  fixes [{#for issues}{#middle}), [{#end}{#notfirst}{#last}) and [{#end}{#end}#{#value}]({repo_url}/issues/{#value}{#end}){#end}'
+t5 := parse_template(s52)!
+m5 := {
+  'description': ['Ensure error location by custom parsing']
+  'short_hash': ['9757213']
+  'hash': ['9757213eda5de9684099024d0c4f59e4d4f59c97']
+  'repo_url': ['https://github.com/prantlf/jsonlint']
+  'issues': ['87', '95', '101']
+}
+
 mut b := start()
 
 for _ in 0 .. repeat_count {
@@ -311,3 +363,23 @@ for _ in 0 .. repeat_count {
 	t3.generate(m3)
 }
 b.measure('loop compiled')
+
+for _ in 0 .. repeat_count {
+	fill(s4, m4)!
+}
+b.measure('heading interpreted')
+
+for _ in 0 .. repeat_count {
+	t4.generate(m4)
+}
+b.measure('heading compiled')
+
+for _ in 0 .. repeat_count {
+	fill(s51, m5)!
+}
+b.measure('commit interpreted')
+
+for _ in 0 .. repeat_count {
+	t5.generate(m5)
+}
+b.measure('commit compiled')
