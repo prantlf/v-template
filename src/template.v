@@ -1,7 +1,7 @@
 module template
 
 import strings { Builder, new_builder }
-import prantlf.strutil { contains_at, index_u8_within, skip_space, skip_trailing_space }
+import prantlf.strutil { contains_at_nochk, index_u8_within_nochk, skip_space_nochk, skip_trailing_space_nochk }
 
 struct Literal {
 	start int
@@ -40,25 +40,15 @@ struct Value {
 	depth int
 }
 
-struct First {
-	depth int
-}
+struct First {}
 
-struct NotFirst {
-	depth int
-}
+struct NotFirst {}
 
-struct Middle {
-	depth int
-}
+struct Middle {}
 
-struct NotLast {
-	depth int
-}
+struct NotLast {}
 
-struct Last {
-	depth int
-}
+struct Last {}
 
 struct End {}
 
@@ -83,7 +73,7 @@ type TemplateAppender = fn (mut builder Builder, vars TemplateData, vals []strin
 [noinit]
 pub struct Template {
 	source_len int
-	appenders    []TemplateAppender
+	appenders  []TemplateAppender
 }
 
 pub interface TemplateData {
@@ -93,18 +83,30 @@ pub interface TemplateData {
 }
 
 pub fn (t &Template) generate(vars TemplateData) string {
+	d.log('generate with %d appenders reserving %d characters', t.appenders.len, t.source_len)
+	d.stop_ticking()
+
 	mut builder := new_builder(t.source_len)
 	for appender in t.appenders {
 		appender(mut builder, vars, [], [], 0)
 	}
-	return builder.str()
+
+	res := builder.str()
+	d.start_ticking()
+	short_res := d.shorten(res)
+	d.log('generated "%s" (length %d)', short_res, res.len)
+	return res
 }
 
 pub fn parse_template(source string) !&Template {
 	parts, needs_depth := scan_template(source)!
 
 	mut appenders := []TemplateAppender{cap: parts.len}
+	d.log('parse %d scanned parts', parts.len)
+	d.stop_ticking()
 	parse_template_block(source, parts, 0, parts.len, mut appenders, needs_depth)
+	d.start_ticking()
+	d.log('parts parsed to %d appenders', appenders.len)
 
 	return &Template{
 		source_len: source.len
@@ -113,6 +115,13 @@ pub fn parse_template(source string) !&Template {
 }
 
 fn scan_template(source string) !([]TemplatePart, bool) {
+	short_s := d.shorten(source)
+	d.log('scan template "%s" (length %d)', short_s, source.len)
+	d.stop_ticking()
+	defer {
+		d.start_ticking()
+	}
+
 	mut parts := []TemplatePart{cap: 8}
 	mut needs_depth := false
 	stop := source.len
@@ -120,22 +129,22 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 	mut close := 0
 	mut depth := 0
 	for {
-		open = index_u8_within(source, `{`, open + 1, stop)
+		open = unsafe { index_u8_within_nochk(source, `{`, open + 1, stop) }
 		if open < 0 {
-			try_add_literal(mut parts, close, stop)
+			try_add_literal(mut parts, source, close, stop)
 			break
 		}
 
 		if open == 0 || source[open - 1] != `\\` {
-			try_add_literal(mut parts, close, open)
+			try_add_literal(mut parts, source, close, open)
 
-			close = index_u8_within(source, `}`, open + 1, stop)
+			close = unsafe { index_u8_within_nochk(source, `}`, open + 1, stop) }
 			if close < 0 {
 				return error('missing } for { at ${open}')
 			}
 
-			name_start := skip_space(source, open + 1, close)
-			name_end := skip_trailing_space(source, name_start, close)
+			name_start := unsafe { skip_space_nochk(source, open + 1, close) }
+			name_end := unsafe { skip_trailing_space_nochk(source, name_start, close) }
 			mut name := source[name_start..name_end]
 
 			start := open
@@ -145,10 +154,13 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 			space := name.index_u8(` `)
 			if space > 0 {
 				op := name[..space]
-				name_start2 := skip_space(name, space + 1, name.len)
+				if op[0] != `#` {
+					return error('operator "${op}" not starting with # at ${start}')
+				}
+				name_start2 := unsafe { skip_space_nochk(name, space + 1, name.len) }
 				name = name[name_start2..]
 				if name.len == 0 {
-					return error('missing operand for {${op}} at ${start}')
+					return error('missing operand for ${op} at ${start}')
 				}
 
 				match op {
@@ -181,50 +193,49 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 						depth++
 					}
 					else {
-						return error('unrecognised operator {${op}} at ${start}')
+						return error('unrecognised operator ${op} at ${start}')
 					}
 				}
+				d.log('create operation "%s" for "%s" at %d', op, name, start)
 			} else {
 				inner_name, name_depth := get_name_with_depth(name)
 				if name_depth > 0 {
 					needs_depth = true
+					if inner_name != '#index' && inner_name != '#value' {
+						kind := if inner_name[0] == `#` {
+							'directive ${inner_name}'
+						} else {
+							'variable "${inner_name}"'
+						}
+						return error('${kind} does not support outer scope ${name[0..name.len - inner_name.len - 1]} (depth ${name_depth})')
+					}
 				}
 				match inner_name {
 					'#end' {
 						if depth == 0 {
-							return error('extra {end} at ${start}')
+							return error('extra #end at ${start}')
 						}
 						depth--
 						parts << End{}
 					}
 					'#first' {
-						parts << First{
-							depth: name_depth
-						}
+						parts << First{}
 						depth++
 					}
 					'#notfirst' {
-						parts << NotFirst{
-							depth: name_depth
-						}
+						parts << NotFirst{}
 						depth++
 					}
 					'#middle' {
-						parts << Middle{
-							depth: name_depth
-						}
+						parts << Middle{}
 						depth++
 					}
 					'#notlast' {
-						parts << NotLast{
-							depth: name_depth
-						}
+						parts << NotLast{}
 						depth++
 					}
 					'#last' {
-						parts << Last{
-							depth: name_depth
-						}
+						parts << Last{}
 						depth++
 					}
 					'#index' {
@@ -239,16 +250,29 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 					}
 					else {
 						if name[0] == `#` {
-							return error('unrecognised directive {${name}} at ${start}')
+							return error('unrecognised directive ${name} at ${start}')
 						}
 						parts << Variable{
 							name: name
 						}
 					}
 				}
+				if d.is_enabled() {
+					scope := if name_depth > 0 {
+						' from scope ${name[0..name.len - inner_name.len - 1]} (depth ${name_depth})'
+					} else {
+						''
+					}
+					kind := if inner_name[0] == `#` {
+						'directive ${inner_name}'
+					} else {
+						'variable "${inner_name}"'
+					}
+					d.log_str('create ${kind} at ${start}${scope}')
+				}
 			}
 		} else {
-			try_add_literal(mut parts, close, open - 1)
+			try_add_literal(mut parts, source, close, open - 1)
 			close = open
 		}
 	}
@@ -257,12 +281,23 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 		return error('missing trailing {#end}')
 	}
 
+	d.start_ticking()
+	if d.is_enabled() {
+		not := if needs_depth {
+			''
+		} else {
+			'not '
+		}
+		d.log_str('template scanned to ${parts.len} parts, ${not}supporting values from outer loops')
+	}
 	return parts, needs_depth
 }
 
-fn try_add_literal[T](mut parts []T, start int, stop int) {
+fn try_add_literal[T](mut parts []T, source string, start int, stop int) {
 	len := stop - start
 	if len > 0 {
+		short_lit := d.shorten_ext(source, start, stop)
+		d.log('create literal "%s" at %d, length %d', short_lit, start, len)
 		parts << Literal{
 			start: start
 			len: len
@@ -278,107 +313,151 @@ fn parse_template_block(source string, parts []TemplatePart, start int, stop int
 				t := source
 				s := part.start
 				l := part.len
-				appenders << fn [t, s, l] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
-					if l > 0 {
-						unsafe { builder.write_ptr(t.str + s, l) }
-					}
+				short_t := d.shorten_ext(t, s, s + l)
+				d.log('append literal "%s", from %d, length %d (part %d)', short_t, s,
+					l, i)
+				appenders << fn [short_t, t, s, l] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
+					d.log('process literal with "%s"', short_t)
+					unsafe { builder.write_ptr(t.str + s, l) }
 				}
 			}
 			End {
 				panic('unexpected end part reached')
 			}
 			First {
-				depth := part.depth
+				d.log('append directive #first (part %d)', i)
 				sub_appenders, end := parse_sub_block(source, parts, i + 1, stop, needs_depth)
-				appenders << fn [sub_appenders, depth] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
-					idx := get_index(idxs, depth)
+				appenders << fn [sub_appenders] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
+					idx := idxs[0]
 					if idx == 0 {
+						d.log_str('process directive #first')
 						for appender in sub_appenders {
 							appender(mut builder, vars, vals, idxs, len)
 						}
+					} else {
+						d.log('ignore directive #first for index %d', idx)
 					}
 				}
 				i = end
 			}
 			NotFirst {
-				depth := part.depth
+				d.log('append directive #notfirst (part %d)', i)
 				sub_appenders, end := parse_sub_block(source, parts, i + 1, stop, needs_depth)
-				appenders << fn [sub_appenders, depth] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
-					idx := get_index(idxs, depth)
+				appenders << fn [sub_appenders] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
+					idx := idxs[0]
 					if idx > 0 {
+						d.log('process directive #notfirst for index %d', idx)
 						for appender in sub_appenders {
 							appender(mut builder, vars, vals, idxs, len)
 						}
+					} else {
+						d.log('ignore directive #notfirst for index %d', idx)
 					}
 				}
 				i = end
 			}
 			Middle {
-				depth := part.depth
+				d.log('append directive #middle (part %d)', i)
 				sub_appenders, end := parse_sub_block(source, parts, i + 1, stop, needs_depth)
-				appenders << fn [sub_appenders, depth] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
-					idx := get_index(idxs, depth)
+				appenders << fn [sub_appenders] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
+					idx := idxs[0]
 					if idx > 0 && idx + 1 != len {
+						d.log('process directive #middle for index %d and length %d',
+							idx, len)
 						for appender in sub_appenders {
 							appender(mut builder, vars, vals, idxs, len)
 						}
+					} else {
+						d.log('ignore directive #middle for index %d and length %d', idx,
+							len)
 					}
 				}
 				i = end
 			}
 			NotLast {
-				depth := part.depth
+				d.log('append directive #notlast (part %d)', i)
 				sub_appenders, end := parse_sub_block(source, parts, i + 1, stop, needs_depth)
-				appenders << fn [sub_appenders, depth] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
-					idx := get_index(idxs, depth)
+				appenders << fn [sub_appenders] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
+					idx := idxs[0]
 					if idx >= 0 && idx + 1 < len {
+						d.log('process directive #notlast for index %d and length %d',
+							idx, len)
 						for appender in sub_appenders {
 							appender(mut builder, vars, vals, idxs, len)
 						}
+					} else {
+						d.log('ignore directive #notlast for index %d and length %d',
+							idx, len)
 					}
 				}
 				i = end
 			}
 			Last {
-				depth := part.depth
+				d.log('append directive #last (part %d)', i)
 				sub_appenders, end := parse_sub_block(source, parts, i + 1, stop, needs_depth)
-				appenders << fn [sub_appenders, depth] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
-					idx := get_index(idxs, depth)
+				appenders << fn [sub_appenders] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
+					idx := idxs[0]
 					if idx >= 0 && idx + 1 == len {
+						d.log('process directive #last for index %d and length %d', idx,
+							len)
 						for appender in sub_appenders {
 							appender(mut builder, vars, vals, idxs, len)
 						}
+					} else {
+						d.log('ignore directive #last for index %d and length %d', idx,
+							len)
 					}
 				}
 				i = end
 			}
 			Index {
 				depth := part.depth
+				d.log('append directive #index with depth %d (part %d)', depth, i)
 				appenders << fn [depth] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					if depth < idxs.len {
-						builder.write_string((idxs[depth] + 1).str())
+						idx := (idxs[depth] + 1).str()
+						d.log('process directive #index with %s, depth %d from %d', idx,
+							depth, idxs.len)
+						builder.write_string(idx)
+					} else {
+						d.log('ignore directive #index with depth %d from %d', depth,
+							idxs.len)
 					}
 				}
 			}
 			Value {
 				depth := part.depth
+				d.log('append directive #value with depth %d (part %d)', depth, i)
 				appenders << fn [depth] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					if depth < vals.len {
-						builder.write_string(vals[depth])
+						val := vals[depth]
+						short_val := d.shorten(val)
+						d.log('process directive #value with "%s", depth %d from %d',
+							short_val, depth, idxs.len)
+						builder.write_string(val)
+					} else {
+						d.log('ignore directive #value with depth %d from %d', depth,
+							idxs.len)
 					}
 				}
 			}
 			Variable {
 				name := part.name
+				d.log('append variable "%s" (part %d)', name, i)
 				appenders << fn [name] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					val := vars.get_one(name)
 					if val.len > 0 {
+						short_val := d.shorten(val)
+						d.log('process variable "%s" with "%s"', name, short_val)
 						builder.write_string(val)
+					} else {
+						d.log('ignore variable "%s"', name)
 					}
 				}
 			}
 			Lines {
 				name := part.name
+				d.log('append operation #lines for "%s" (part %d)', name, i)
 				appenders << fn [name] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					// if lines := get_values(name, vars, vals, idxs) {
 					lines := get_values(name, vars, vals, idxs)
@@ -392,6 +471,7 @@ fn parse_template_block(source string, parts []TemplatePart, start int, stop int
 			}
 			Items {
 				name := part.name
+				d.log('append operation #items for "%s" (part %d)', name, i)
 				appenders << fn [name] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					// if items := get_values(name, vars, vals, idxs) {
 					items := get_values(name, vars, vals, idxs)
@@ -406,6 +486,7 @@ fn parse_template_block(source string, parts []TemplatePart, start int, stop int
 			}
 			If {
 				name := part.name
+				d.log('append block #if for "%s" (part %d)', name, i)
 				sub_appenders, end := parse_sub_block(source, parts, i + 1, stop, needs_depth)
 				appenders << fn [sub_appenders, name] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					// if val := get_values(name, vars, vals, idxs) {
@@ -420,6 +501,7 @@ fn parse_template_block(source string, parts []TemplatePart, start int, stop int
 			}
 			Unless {
 				name := part.name
+				d.log('append block #unless for "%s" (part %d)', name, i)
 				sub_appenders, end := parse_sub_block(source, parts, i + 1, stop, needs_depth)
 				appenders << fn [sub_appenders, name] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					// if get_values(name, vars, vals, idxs) == none {
@@ -434,6 +516,7 @@ fn parse_template_block(source string, parts []TemplatePart, start int, stop int
 			}
 			For {
 				name := part.name
+				d.log('append block #for for "%s" (part %d)', name, i)
 				sub_appenders, end := parse_sub_block(source, parts, i + 1, stop, needs_depth)
 				appenders << fn [sub_appenders, name, needs_depth] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					// if items := get_values(name, vars, vals, idxs) {
@@ -472,8 +555,10 @@ fn parse_template_block(source string, parts []TemplatePart, start int, stop int
 
 fn parse_sub_block(source string, parts []TemplatePart, start int, stop int, needs_depth bool) ([]TemplateAppender, int) {
 	end := find_end(parts, start, stop)
-	mut sub_appenders := []TemplateAppender{cap: end - start - 1}
+	d.log('> block consists of %d parts', end - start)
+	mut sub_appenders := []TemplateAppender{cap: end - start}
 	parse_template_block(source, parts, start, end, mut sub_appenders, needs_depth)
+	d.log('< block starting at part %d ended', start - 1)
 	return sub_appenders, end
 }
 
@@ -553,7 +638,7 @@ fn get_values(name string, vars TemplateData, vals []string, idxs []int) []strin
 
 fn get_name_with_depth(name string) (string, int) {
 	mut depth := 0
-	for contains_at(name, '../', depth) {
+	for unsafe { contains_at_nochk(name, '../', depth) } {
 		depth += 3
 	}
 	if depth > 0 {

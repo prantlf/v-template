@@ -2,7 +2,7 @@
 
 import benchmark { start }
 import strings { Builder, new_builder }
-import prantlf.strutil { index_u8_within }
+import prantlf.strutil { index_u8_within_nochk }
 import prantlf.template { parse_replacer, parse_template }
 
 fn (m map[string][]string) has(name string) bool {
@@ -59,7 +59,7 @@ fn fill(tpl string, vars map[string][]string) !string {
 	for {
 		if open == 0 || tpl[open - 1] != `\\` {
 			unsafe { builder.write_ptr(tpl.str + close, open - close) }
-			close = index_u8_within(tpl, `}`, open + 1, stop)
+			close = unsafe { index_u8_within_nochk(tpl, `}`, open + 1, stop) }
 			if close < 0 {
 				return error('missing closing brace after ${open}')
 			}
@@ -109,7 +109,7 @@ fn fill(tpl string, vars map[string][]string) !string {
 			close = open + 1
 		}
 
-		open = index_u8_within(tpl, `{`, open + 1, stop)
+		open = unsafe { index_u8_within_nochk(tpl, `{`, open + 1, stop) }
 		if open < 0 {
 			unsafe { builder.write_ptr(tpl.str + close, stop - close) }
 			break
@@ -120,7 +120,7 @@ fn fill(tpl string, vars map[string][]string) !string {
 }
 
 fn fill_block(mut builder Builder, tpl string, start int, stop int, value string, index int, length int, vars map[string][]string) ! {
-	mut open := index_u8_within(tpl, `{`, start, stop)
+	mut open := unsafe { index_u8_within_nochk(tpl, `{`, start, stop) }
 	if open < 0 {
 		unsafe { builder.write_ptr(tpl.str + start, stop - start) }
 		return
@@ -130,7 +130,7 @@ fn fill_block(mut builder Builder, tpl string, start int, stop int, value string
 	for {
 		if tpl[open - 1] != `\\` {
 			unsafe { builder.write_ptr(tpl.str + close, open - close) }
-			close = index_u8_within(tpl, `}`, open + 1, stop)
+			close = unsafe { index_u8_within_nochk(tpl, `}`, open + 1, stop) }
 			if close < 0 {
 				return error('missing closing brace after ${open}')
 			}
@@ -235,7 +235,7 @@ fn fill_block(mut builder Builder, tpl string, start int, stop int, value string
 			close = open + 1
 		}
 
-		open = index_u8_within(tpl, `{`, open + 1, stop)
+		open = unsafe { index_u8_within_nochk(tpl, `{`, open + 1, stop) }
 		if open < 0 {
 			unsafe { builder.write_ptr(tpl.str + close, stop - close) }
 			break
@@ -285,16 +285,6 @@ fn find_end(tpl string, op string, start int, stop int) !int {
 		}
 	}
 	return end
-}
-
-[direct_array_access]
-fn index_u8_within(s string, c u8, start int, stop int) int {
-	for i := start; i < stop; i++ {
-		if s[i] == c {
-			return i
-		}
-	}
-	return -1
 }
 
 const repeat_count = 10000000
