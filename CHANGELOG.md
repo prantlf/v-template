@@ -1,5 +1,11 @@
 # Changes
 
+## [0.3.0](https://github.com/prantlf/v-template/compare/v0.2.0...v0.3.0) (2023-08-11)
+
+### Features
+
+* Add debug logging, depend on prantlf.strutil ([eb588d5](https://github.com/prantlf/v-template/commit/eb588d58d55abdcc443e10d2fb0e7c080f6197f0))
+
 ## [0.2.0](https://github.com/prantlf/v-template/compare/v0.1.0...v0.2.0) (2023-08-10)
 
 ### Features
