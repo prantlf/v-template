@@ -1,7 +1,7 @@
 module template
 
 import strings { Builder, new_builder }
-import prantlf.strutil { contains_at_nochk, index_u8_within_nochk, skip_space_nochk, skip_trailing_space_nochk }
+import prantlf.strutil { index_u8_within_nochk, skip_space_within_nochk, skip_trailing_space_within_nochk, starts_with_within_nochk }
 
 struct Literal {
 	start int
@@ -140,11 +140,16 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 
 			close = unsafe { index_u8_within_nochk(source, `}`, open + 1, stop) }
 			if close < 0 {
-				return error('missing } for { at ${open}')
+				return ParseError{
+					msg: 'missing } for {'
+					at: open
+				}
 			}
 
-			name_start := unsafe { skip_space_nochk(source, open + 1, close) }
-			name_end := unsafe { skip_trailing_space_nochk(source, name_start, close) }
+			name_start := unsafe { skip_space_within_nochk(source, open + 1, close) }
+			name_end := unsafe {
+				skip_trailing_space_within_nochk(source, name_start, close)
+			}
 			mut name := source[name_start..name_end]
 
 			start := open
@@ -155,12 +160,18 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 			if space > 0 {
 				op := name[..space]
 				if op[0] != `#` {
-					return error('operator "${op}" not starting with # at ${start}')
+					return ParseError{
+						msg: 'operator "${op}" not starting with #'
+						at: start
+					}
 				}
-				name_start2 := unsafe { skip_space_nochk(name, space + 1, name.len) }
+				name_start2 := unsafe { skip_space_within_nochk(name, space + 1, name.len) }
 				name = name[name_start2..]
 				if name.len == 0 {
-					return error('missing operand for ${op} at ${start}')
+					return ParseError{
+						msg: 'missing operand for ${op}'
+						at: start
+					}
 				}
 
 				match op {
@@ -193,7 +204,10 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 						depth++
 					}
 					else {
-						return error('unrecognised operator ${op} at ${start}')
+						return ParseError{
+							msg: 'unrecognised operator ${op} at ${start}'
+							at: start
+						}
 					}
 				}
 				d.log('create operation "%s" for "%s" at %d', op, name, start)
@@ -207,13 +221,19 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 						} else {
 							'variable "${inner_name}"'
 						}
-						return error('${kind} does not support outer scope ${name[0..name.len - inner_name.len - 1]} (depth ${name_depth})')
+						return ParseError{
+							msg: '${kind} does not support outer scope ${name[0..name.len - inner_name.len - 1]} (depth ${name_depth})'
+							at: start
+						}
 					}
 				}
 				match inner_name {
 					'#end' {
 						if depth == 0 {
-							return error('extra #end at ${start}')
+							return ParseError{
+								msg: 'extra #end'
+								at: start
+							}
 						}
 						depth--
 						parts << End{}
@@ -250,7 +270,10 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 					}
 					else {
 						if name[0] == `#` {
-							return error('unrecognised directive ${name} at ${start}')
+							return ParseError{
+								msg: 'unrecognised directive ${name} at ${start}'
+								at: start
+							}
 						}
 						parts << Variable{
 							name: name
@@ -278,7 +301,10 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 	}
 
 	if depth > 0 {
-		return error('missing trailing {#end}')
+		return ParseError{
+			msg: 'missing trailing {#end}'
+			at: source.len - 1
+		}
 	}
 
 	d.start_ticking()
@@ -296,7 +322,7 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 fn try_add_literal[T](mut parts []T, source string, start int, stop int) {
 	len := stop - start
 	if len > 0 {
-		short_lit := d.shorten_ext(source, start, stop)
+		short_lit := d.shorten_within(source, start, stop)
 		d.log('create literal "%s" at %d, length %d', short_lit, start, len)
 		parts << Literal{
 			start: start
@@ -313,7 +339,7 @@ fn parse_template_block(source string, parts []TemplatePart, start int, stop int
 				t := source
 				s := part.start
 				l := part.len
-				short_t := d.shorten_ext(t, s, s + l)
+				short_t := d.shorten_within(t, s, s + l)
 				d.log('append literal "%s", from %d, length %d (part %d)', short_t, s,
 					l, i)
 				appenders << fn [short_t, t, s, l] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
@@ -638,7 +664,7 @@ fn get_values(name string, vars TemplateData, vals []string, idxs []int) []strin
 
 fn get_name_with_depth(name string) (string, int) {
 	mut depth := 0
-	for unsafe { contains_at_nochk(name, '../', depth) } {
+	for unsafe { starts_with_within_nochk(name, '../', depth, name.len) } {
 		depth += 3
 	}
 	if depth > 0 {

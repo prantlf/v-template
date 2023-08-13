@@ -2,7 +2,7 @@ module template
 
 import strings { Builder, new_builder }
 import prantlf.debug { new_debug }
-import prantlf.strutil { index_u8_within_nochk, skip_space_nochk, skip_trailing_space_nochk }
+import prantlf.strutil { index_u8_within_nochk, skip_space_within_nochk, skip_trailing_space_within_nochk }
 
 const d = new_debug('template')
 
@@ -22,8 +22,9 @@ pub struct ReplacerOpts {
 }
 
 pub fn (t &Replacer) replace(vars TemplateData) string {
-	d.log('replace with %d appenders reserving %d characters', t.appenders.len, t.source_len)
-	d.stop_ticking()
+	template.d.log('replace with %d appenders reserving %d characters', t.appenders.len,
+		t.source_len)
+	template.d.stop_ticking()
 
 	mut builder := new_builder(t.source_len)
 	for appender in t.appenders {
@@ -31,9 +32,9 @@ pub fn (t &Replacer) replace(vars TemplateData) string {
 	}
 
 	res := builder.str()
-	d.start_ticking()
-	short_res := d.shorten(res)
-	d.log('replaced "%s" (length %d)', short_res, res.len)
+	template.d.start_ticking()
+	short_res := template.d.shorten(res)
+	template.d.log('replaced "%s" (length %d)', short_res, res.len)
 	return res
 }
 
@@ -54,8 +55,8 @@ pub fn parse_replacer_opt(source string, opts &ReplacerOpts) !&Replacer {
 }
 
 fn scan_replacer(source string, opts &ReplacerOpts) ![]ReplacePart {
-	if d.is_enabled() {
-		short_s := d.shorten(source)
+	if template.d.is_enabled() {
+		short_s := template.d.shorten(source)
 		opts_s := if opts.vars.len > 0 {
 			verb := if opts.exclude {
 				'exclude'
@@ -66,8 +67,8 @@ fn scan_replacer(source string, opts &ReplacerOpts) ![]ReplacePart {
 		} else {
 			''
 		}
-		d.log_str('scan replacer "${short_s}" (length ${source.len}${opts_s})}')
-		d.stop_ticking()
+		template.d.log_str('scan replacer "${short_s}" (length ${source.len}${opts_s})}')
+		template.d.stop_ticking()
 		defer {
 			template.d.start_ticking()
 		}
@@ -87,11 +88,16 @@ fn scan_replacer(source string, opts &ReplacerOpts) ![]ReplacePart {
 		if open == 0 || source[open - 1] != `\\` {
 			end := unsafe { index_u8_within_nochk(source, `}`, open + 1, stop) }
 			if end < 0 {
-				return error('missing } for { at ${open}')
+				return ParseError{
+					msg: 'missing } for {'
+					at: open
+				}
 			}
 
-			name_start := unsafe { skip_space_nochk(source, open + 1, end) }
-			name_end := unsafe { skip_trailing_space_nochk(source, name_start, end) }
+			name_start := unsafe { skip_space_within_nochk(source, open + 1, end) }
+			name_end := unsafe {
+				skip_trailing_space_within_nochk(source, name_start, end)
+			}
 			name := source[name_start..name_end]
 			if opts.vars.len > 0 && ((opts.exclude && name in opts.vars)
 				|| (!opts.exclude && name !in opts.vars)) {
@@ -120,7 +126,7 @@ fn scan_replacer(source string, opts &ReplacerOpts) ![]ReplacePart {
 }
 
 fn parse_replace_block(source string, parts []ReplacePart, mut appenders []ReplaceAppender) {
-	d.log('parse %d scanned parts', parts.len)
+	template.d.log('parse %d scanned parts', parts.len)
 	template.d.stop_ticking()
 	for i := 0; i < parts.len; i++ {
 		part := parts[i]
@@ -129,7 +135,7 @@ fn parse_replace_block(source string, parts []ReplacePart, mut appenders []Repla
 				t := source
 				s := part.start
 				l := part.len
-				short_t := template.d.shorten_ext(t, s, s + l)
+				short_t := template.d.shorten_within(t, s, s + l)
 				template.d.log('append literal "%s" from %d, length %d (part %d)', short_t,
 					s, l, i)
 				appenders << fn [short_t, t, s, l] (mut builder Builder, vars TemplateData) {
