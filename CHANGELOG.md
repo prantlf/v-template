@@ -1,5 +1,11 @@
 # Changes
 
+## [0.4.0](https://github.com/prantlf/v-template/compare/v0.3.0...v0.4.0) (2023-08-13)
+
+### Features
+
+* Introduce custom parse error ([4b63e30](https://github.com/prantlf/v-template/commit/4b63e3093418406df756260b83d9072bc1463559))
+
 ## [0.3.0](https://github.com/prantlf/v-template/compare/v0.2.0...v0.3.0) (2023-08-11)
 
 ### Features
