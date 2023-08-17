@@ -6,6 +6,3 @@ check:
 
 test:
 	v test .
-
-version:
-	npx conventional-changelog-cli -p angular -i CHANGELOG.md -s
