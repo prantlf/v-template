@@ -1,5 +1,11 @@
 # Changes
 
+## [0.4.1](https://github.com/prantlf/v-template/compare/v0.4.0...v0.4.1) (2023-12-11)
+
+### Bug Fixes
+
+* Adapt for V langage changes ([37c44bf](https://github.com/prantlf/v-template/commit/37c44bfdcde72e5fe67945f5c5bc078f4447298f))
+
 ## [0.4.0](https://github.com/prantlf/v-template/compare/v0.3.0...v0.4.0) (2023-08-13)
 
 ### Features
