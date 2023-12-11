@@ -5,4 +5,4 @@ check:
 	v vet .
 
 test:
-	v test .
+	v -use-os-system-to-run test .

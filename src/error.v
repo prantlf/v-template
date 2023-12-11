@@ -1,6 +1,6 @@
 module template
 
-[noinit]
+@[noinit]
 pub struct ParseError {
 	Error
 pub:

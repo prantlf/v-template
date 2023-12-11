@@ -10,7 +10,7 @@ type ReplacePart = Literal | Variable
 
 type ReplaceAppender = fn (mut builder Builder, vars TemplateData)
 
-[noinit]
+@[noinit]
 pub struct Replacer {
 	source_len int
 	appenders  []ReplaceAppender

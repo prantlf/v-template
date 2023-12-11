@@ -70,7 +70,7 @@ type TemplatePart = End
 
 type TemplateAppender = fn (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int)
 
-[noinit]
+@[noinit]
 pub struct Template {
 	source_len int
 	appenders  []TemplateAppender
