@@ -581,10 +581,12 @@ fn parse_template_block(source string, parts []TemplatePart, start int, stop int
 
 fn parse_sub_block(source string, parts []TemplatePart, start int, stop int, needs_depth bool) ([]TemplateAppender, int) {
 	end := find_end(parts, start, stop)
-	d.log('> block consists of %d parts', end - start)
-	mut sub_appenders := []TemplateAppender{cap: end - start}
+	count := end - start
+	d.log('> block consists of %d parts', count)
+	mut sub_appenders := []TemplateAppender{cap: count}
 	parse_template_block(source, parts, start, end, mut sub_appenders, needs_depth)
-	d.log('< block starting at part %d ended', start - 1)
+	part_num := start - 1
+	d.log('< block starting at part %d ended', part_num)
 	return sub_appenders, end
 }
 
