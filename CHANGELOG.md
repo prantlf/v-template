@@ -1,5 +1,11 @@
 # Changes
 
+## [0.4.2](https://github.com/prantlf/v-template/compare/v0.4.1...v0.4.2) (2024-03-24)
+
+### Bug Fixes
+
+* Work around a bug in V passing integer expression as pointer to varargs ([2f2c819](https://github.com/prantlf/v-template/commit/2f2c8190bd430171b6dd0935d8c2ae29ed573d69))
+
 ## [0.4.1](https://github.com/prantlf/v-template/compare/v0.4.0...v0.4.1) (2023-12-11)
 
 ### Bug Fixes
