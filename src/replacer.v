@@ -17,6 +17,7 @@ pub struct Replacer {
 }
 
 pub struct ReplacerOpts {
+pub:
 	vars    []string
 	exclude bool
 }
