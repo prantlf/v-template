@@ -1,5 +1,11 @@
 # Changes
 
+## [0.4.3](https://github.com/prantlf/v-template/compare/v0.4.2...v0.4.3) (2024-04-17)
+
+### Bug Fixes
+
+* Declare fields in ReplacerOpts as public ([8c10975](https://github.com/prantlf/v-template/commit/8c109755f5f5b3fc22281c67eefc549265888177))
+
 ## [0.4.2](https://github.com/prantlf/v-template/compare/v0.4.1...v0.4.2) (2024-03-24)
 
 ### Bug Fixes
