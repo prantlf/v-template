@@ -1,5 +1,11 @@
 # Changes
 
+## [0.4.4](https://github.com/prantlf/v-template/compare/v0.4.3...v0.4.4) (2024-11-16)
+
+### Bug Fixes
+
+* Fix sources for the new V compiler ([a5e3193](https://github.com/prantlf/v-template/commit/a5e3193b3263265ca280031507d911a511df5e9c))
+
 ## [0.4.3](https://github.com/prantlf/v-template/compare/v0.4.2...v0.4.3) (2024-04-17)
 
 ### Bug Fixes
