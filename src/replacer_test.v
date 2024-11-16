@@ -88,7 +88,7 @@ fn test_value_opt() {
 
 fn test_excluded_var() {
 	t := parse_replacer_opt('{text}', ReplacerOpts{
-		vars: ['text']
+		vars:    ['text']
 		exclude: true
 	})!
 	vars := {
@@ -100,7 +100,7 @@ fn test_excluded_var() {
 
 fn test_not_excluded_var() {
 	t := parse_replacer_opt('{text}', ReplacerOpts{
-		vars: ['text2']
+		vars:    ['text2']
 		exclude: true
 	})!
 	vars := {

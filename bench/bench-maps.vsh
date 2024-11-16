@@ -164,7 +164,7 @@ two_map := MapData{
 		'hash':        '9757213eda5de9684099024d0c4f59e4d4f59c97'
 		'repo_url':    'https://github.com/prantlf/jsonlint'
 	}
-	arrays: {
+	arrays:  {
 		'issues':          ['87', '95', '101']
 		'BREAKING_CHANGE': [
 			"* Although you shouldn't notice any change on the behaviour of the command line, something unexpected might've changed.",

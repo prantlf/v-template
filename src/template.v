@@ -110,7 +110,7 @@ pub fn parse_template(source string) !&Template {
 
 	return &Template{
 		source_len: source.len
-		appenders: appenders
+		appenders:  appenders
 	}
 }
 
@@ -142,7 +142,7 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 			if close < 0 {
 				return ParseError{
 					msg: 'missing } for {'
-					at: open
+					at:  open
 				}
 			}
 
@@ -162,7 +162,7 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 				if op[0] != `#` {
 					return ParseError{
 						msg: 'operator "${op}" not starting with #'
-						at: start
+						at:  start
 					}
 				}
 				name_start2 := unsafe { skip_space_within_nochk(name, space + 1, name.len) }
@@ -170,7 +170,7 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 				if name.len == 0 {
 					return ParseError{
 						msg: 'missing operand for ${op}'
-						at: start
+						at:  start
 					}
 				}
 
@@ -206,7 +206,7 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 					else {
 						return ParseError{
 							msg: 'unrecognised operator ${op} at ${start}'
-							at: start
+							at:  start
 						}
 					}
 				}
@@ -223,7 +223,7 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 						}
 						return ParseError{
 							msg: '${kind} does not support outer scope ${name[0..name.len - inner_name.len - 1]} (depth ${name_depth})'
-							at: start
+							at:  start
 						}
 					}
 				}
@@ -232,7 +232,7 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 						if depth == 0 {
 							return ParseError{
 								msg: 'extra #end'
-								at: start
+								at:  start
 							}
 						}
 						depth--
@@ -272,7 +272,7 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 						if name[0] == `#` {
 							return ParseError{
 								msg: 'unrecognised directive ${name} at ${start}'
-								at: start
+								at:  start
 							}
 						}
 						parts << Variable{
@@ -303,7 +303,7 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 	if depth > 0 {
 		return ParseError{
 			msg: 'missing trailing {#end}'
-			at: source.len - 1
+			at:  source.len - 1
 		}
 	}
 
@@ -326,7 +326,7 @@ fn try_add_literal[T](mut parts []T, source string, start int, stop int) {
 		d.log('create literal "%s" at %d, length %d', short_lit, start, len)
 		parts << Literal{
 			start: start
-			len: len
+			len:   len
 		}
 	}
 }
