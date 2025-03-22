@@ -167,7 +167,7 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 				}
 				name_start2 := unsafe { skip_space_within_nochk(name, space + 1, name.len) }
 				name = name[name_start2..]
-				if name.len == 0 {
+				if name == '' {
 					return ParseError{
 						msg: 'missing operand for ${op}'
 						at:  start
@@ -532,7 +532,7 @@ fn parse_template_block(source string, parts []TemplatePart, start int, stop int
 				appenders << fn [sub_appenders, name] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					// if get_values(name, vars, vals, idxs) == none {
 					val := get_value(name, vars, vals, idxs)
-					if val.len == 0 {
+					if val == '' {
 						for appender in sub_appenders {
 							appender(mut builder, vars, vals, idxs, len)
 						}
