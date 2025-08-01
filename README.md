@@ -33,8 +33,8 @@ Generating a string using a map `string` to `[]string`. See the implementation o
 ```go
 import prantlf.template { parse_template }
 
-source := '* {description} ([{short_hash}]({repo_url}/commit/{hash})){if issues}
-  fixes [{for issues}{notfirst}), [{end}#{value}]({repo_url}/issues/{value}{end}){end}'
+source := '* {description} ([{short_hash}]({repo_url}/commit/{hash})){#if issues}
+  fixes [{#for issues}{#notfirst}), [{#end}#{value}]({repo_url}/issues/{#value}{#end}){#end}'
 template := parse_template(source)!
 
 vars := {
