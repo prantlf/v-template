@@ -313,7 +313,7 @@ interface TemplateData {
 }
 ```
 
-For [example](src/string_map_test.v), a map `string` to `string`:
+For [example](lib/string_map_test.v), a map `string` to `string`:
 
 ```go
 fn (m map[string]string) has(name string) bool {
@@ -333,7 +333,7 @@ fn (m map[string]string) get_more(name string) []string {
 }
 ```
 
-For [example](src/string_array_map_test.v), a map `string` to `[]string`:
+For [example](lib/string_array_map_test.v), a map `string` to `[]string`:
 
 ```go
 fn (m map[string][]string) has(name string) bool {
@@ -354,7 +354,7 @@ fn (m map[string][]string) get_more(name string) []string {
 }
 ```
 
-For [example](src/two_maps_test.v), a struct `MapData` with separate maps `string` to `string` and `string` to `[]string`:
+For [example](lib/two_maps_test.v), a struct `MapData` with separate maps `string` to `string` and `string` to `[]string`:
 
 ```go
 struct MapData {
@@ -390,7 +390,7 @@ fn (d &MapData) get_more(name string) []string {
 }
 ```
 
-For [example](src/struct_test.v), a struct `Data` with fields of types `string` and `[]string` instead of a map:
+For [example](lib/struct_test.v), a struct `Data` with fields of types `string` and `[]string` instead of a map:
 
 ```go
 struct Data {

@@ -210,6 +210,7 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 						}
 					}
 				}
+
 				d.log('create operation "%s" for "%s" at %d', op, name, start)
 			} else {
 				inner_name, name_depth := get_name_with_depth(name)
@@ -222,7 +223,8 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 							'variable "${inner_name}"'
 						}
 						return ParseError{
-							msg: '${kind} does not support outer scope ${name[0..name.len - inner_name.len - 1]} (depth ${name_depth})'
+							msg: '${kind} does not support outer scope ${name[0..name.len -
+								inner_name.len - 1]} (depth ${name_depth})'
 							at:  start
 						}
 					}
@@ -280,6 +282,7 @@ fn scan_template(source string) !([]TemplatePart, bool) {
 						}
 					}
 				}
+
 				if d.is_enabled() {
 					scope := if name_depth > 0 {
 						' from scope ${name[0..name.len - inner_name.len - 1]} (depth ${name_depth})'
@@ -340,8 +343,7 @@ fn parse_template_block(source string, parts []TemplatePart, start int, stop int
 				s := part.start
 				l := part.len
 				short_t := d.shorten_within(t, s, s + l)
-				d.log('append literal "%s", from %d, length %d (part %d)', short_t, s,
-					l, i)
+				d.log('append literal "%s", from %d, length %d (part %d)', short_t, s, l, i)
 				appenders << fn [short_t, t, s, l] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					d.log('process literal with "%s"', short_t)
 					unsafe { builder.write_ptr(t.str + s, l) }
@@ -388,14 +390,12 @@ fn parse_template_block(source string, parts []TemplatePart, start int, stop int
 				appenders << fn [sub_appenders] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					idx := idxs[0]
 					if idx > 0 && idx + 1 != len {
-						d.log('process directive #middle for index %d and length %d',
-							idx, len)
+						d.log('process directive #middle for index %d and length %d', idx, len)
 						for appender in sub_appenders {
 							appender(mut builder, vars, vals, idxs, len)
 						}
 					} else {
-						d.log('ignore directive #middle for index %d and length %d', idx,
-							len)
+						d.log('ignore directive #middle for index %d and length %d', idx, len)
 					}
 				}
 				i = end
@@ -406,14 +406,12 @@ fn parse_template_block(source string, parts []TemplatePart, start int, stop int
 				appenders << fn [sub_appenders] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					idx := idxs[0]
 					if idx >= 0 && idx + 1 < len {
-						d.log('process directive #notlast for index %d and length %d',
-							idx, len)
+						d.log('process directive #notlast for index %d and length %d', idx, len)
 						for appender in sub_appenders {
 							appender(mut builder, vars, vals, idxs, len)
 						}
 					} else {
-						d.log('ignore directive #notlast for index %d and length %d',
-							idx, len)
+						d.log('ignore directive #notlast for index %d and length %d', idx, len)
 					}
 				}
 				i = end
@@ -424,14 +422,12 @@ fn parse_template_block(source string, parts []TemplatePart, start int, stop int
 				appenders << fn [sub_appenders] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					idx := idxs[0]
 					if idx >= 0 && idx + 1 == len {
-						d.log('process directive #last for index %d and length %d', idx,
-							len)
+						d.log('process directive #last for index %d and length %d', idx, len)
 						for appender in sub_appenders {
 							appender(mut builder, vars, vals, idxs, len)
 						}
 					} else {
-						d.log('ignore directive #last for index %d and length %d', idx,
-							len)
+						d.log('ignore directive #last for index %d and length %d', idx, len)
 					}
 				}
 				i = end
@@ -442,12 +438,11 @@ fn parse_template_block(source string, parts []TemplatePart, start int, stop int
 				appenders << fn [depth] (mut builder Builder, vars TemplateData, vals []string, idxs []int, len int) {
 					if depth < idxs.len {
 						idx := (idxs[depth] + 1).str()
-						d.log('process directive #index with %s, depth %d from %d', idx,
-							depth, idxs.len)
+						d.log('process directive #index with %s, depth %d from %d', idx, depth,
+							idxs.len)
 						builder.write_string(idx)
 					} else {
-						d.log('ignore directive #index with depth %d from %d', depth,
-							idxs.len)
+						d.log('ignore directive #index with depth %d from %d', depth, idxs.len)
 					}
 				}
 			}
@@ -458,12 +453,11 @@ fn parse_template_block(source string, parts []TemplatePart, start int, stop int
 					if depth < vals.len {
 						val := vals[depth]
 						short_val := d.shorten(val)
-						d.log('process directive #value with "%s", depth %d from %d',
-							short_val, depth, idxs.len)
+						d.log('process directive #value with "%s", depth %d from %d', short_val,
+							depth, idxs.len)
 						builder.write_string(val)
 					} else {
-						d.log('ignore directive #value with depth %d from %d', depth,
-							idxs.len)
+						d.log('ignore directive #value with depth %d from %d', depth, idxs.len)
 					}
 				}
 			}
@@ -567,8 +561,7 @@ fn parse_template_block(source string, parts []TemplatePart, start int, stop int
 								unsafe {
 									inner_idxs[0] = i
 								}
-								appender(mut builder, vars, *inner_vals, *inner_idxs,
-									items.len)
+								appender(mut builder, vars, *inner_vals, *inner_idxs, items.len)
 							}
 						}
 					}

@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Sources
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
     - name: Setup V
       uses: prantlf/setup-v-action@v2
     - name: Test
@@ -27,7 +27,7 @@ jobs:
     runs-on: macos-latest
     steps:
     - name: Checkout Sources
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
     - name: Setup V
       uses: prantlf/setup-v-action@v2
     - name: Test
@@ -37,17 +37,17 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout Sources
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
     - name: Setup V
       uses: prantlf/setup-v-action@v2
       with:
         install-dependencies: false
     - name: Install Dependencies
       run: |
-        md src\modules
-        md src\modules\prantlf
-        git clone --depth=1 --recursive --shallow-submodules https://github.com/prantlf/v-debug src\modules\prantlf\debug
-        git clone --depth=1 --recursive --shallow-submodules https://github.com/prantlf/v-strutil src\modules\prantlf\strutil
+        md lib\modules
+        md lib\modules\prantlf
+        git clone --depth=1 --recursive --shallow-submodules https://github.com/prantlf/v-debug lib\modules\prantlf\debug
+        git clone --depth=1 --recursive --shallow-submodules https://github.com/prantlf/v-strutil lib\modules\prantlf\strutil
     - name: Test
       run: cmd /c make.bat
 
@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout sources
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
     - name: Publish release
       uses: prantlf/publish-release-action@v1
       with:

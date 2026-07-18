@@ -76,8 +76,7 @@ fn fill(tpl string, vars map[string][]string) !string {
 						'if' {
 							end := find_end(tpl, '{fi}', open, stop)!
 							if val := vars[name] {
-								fill_block(mut builder, tpl, close, end, val[0], -1, -1,
-									vars)!
+								fill_block(mut builder, tpl, close, end, val[0], -1, -1, vars)!
 							}
 							open = end + 3
 							close = open + 1
@@ -86,8 +85,7 @@ fn fill(tpl string, vars map[string][]string) !string {
 							end := find_end(tpl, '{rof}', open, stop)!
 							if vals := vars[name] {
 								for i, val in vals {
-									fill_block(mut builder, tpl, close, end, val, i, vals.len,
-										vars)!
+									fill_block(mut builder, tpl, close, end, val, i, vals.len, vars)!
 								}
 							}
 							open = end + 4
@@ -147,8 +145,7 @@ fn fill_block(mut builder Builder, tpl string, start int, stop int, value string
 						'if' {
 							end := find_end(tpl, '{fi}', open, stop)!
 							if val := vars[name] {
-								fill_block(mut builder, tpl, close, end, val[0], -1, -1,
-									vars)!
+								fill_block(mut builder, tpl, close, end, val[0], -1, -1, vars)!
 							}
 							open = end + 3
 							close = open + 1
@@ -157,8 +154,7 @@ fn fill_block(mut builder Builder, tpl string, start int, stop int, value string
 							end := find_end(tpl, '{rof}', open, stop)!
 							if vals := vars[name] {
 								for i, val in vals {
-									fill_block(mut builder, tpl, close, end, val, i, vals.len,
-										vars)!
+									fill_block(mut builder, tpl, close, end, val, i, vals.len, vars)!
 								}
 							}
 							open = end + 4
@@ -174,8 +170,7 @@ fn fill_block(mut builder Builder, tpl string, start int, stop int, value string
 					'first' {
 						end := find_end(tpl, '{tsrif}', open, stop)!
 						if index == 0 {
-							fill_block(mut builder, tpl, close, end, value, index, length,
-								vars)!
+							fill_block(mut builder, tpl, close, end, value, index, length, vars)!
 						}
 						open = end + 5
 						close = open + 1
@@ -183,8 +178,7 @@ fn fill_block(mut builder Builder, tpl string, start int, stop int, value string
 					'notfirst' {
 						end := find_end(tpl, '{tsrifton}', open, stop)!
 						if index > 0 {
-							fill_block(mut builder, tpl, close, end, value, index, length,
-								vars)!
+							fill_block(mut builder, tpl, close, end, value, index, length, vars)!
 						}
 						open = end + 9
 						close = open + 1
@@ -192,8 +186,7 @@ fn fill_block(mut builder Builder, tpl string, start int, stop int, value string
 					'middle' {
 						end := find_end(tpl, '{elddim}', open, stop)!
 						if index > 0 && index + 1 < length {
-							fill_block(mut builder, tpl, close, end, value, index, length,
-								vars)!
+							fill_block(mut builder, tpl, close, end, value, index, length, vars)!
 						}
 						open = end + 7
 						close = open + 1
@@ -201,8 +194,7 @@ fn fill_block(mut builder Builder, tpl string, start int, stop int, value string
 					'notlast' {
 						end := find_end(tpl, '{tsalton}', open, stop)!
 						if index + 1 < length {
-							fill_block(mut builder, tpl, close, end, value, index, length,
-								vars)!
+							fill_block(mut builder, tpl, close, end, value, index, length, vars)!
 						}
 						open = end + 8
 						close = open + 1
@@ -210,8 +202,7 @@ fn fill_block(mut builder Builder, tpl string, start int, stop int, value string
 					'last' {
 						end := find_end(tpl, '{tsal}', open, stop)!
 						if index + 1 == length {
-							fill_block(mut builder, tpl, close, end, value, index, length,
-								vars)!
+							fill_block(mut builder, tpl, close, end, value, index, length, vars)!
 						}
 						open = end + 5
 						close = open + 1
@@ -270,6 +261,7 @@ fn eval_var(mut builder Builder, op string, name string, vars map[string][]strin
 			return false
 		}
 	}
+
 	return true
 }
 

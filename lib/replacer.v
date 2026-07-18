@@ -135,8 +135,7 @@ fn parse_replace_block(source string, parts []ReplacePart, mut appenders []Repla
 				s := part.start
 				l := part.len
 				short_t := d.shorten_within(t, s, s + l)
-				d.log('append literal "%s" from %d, length %d (part %d)', short_t, s,
-					l, i)
+				d.log('append literal "%s" from %d, length %d (part %d)', short_t, s, l, i)
 				appenders << fn [short_t, t, s, l] (mut builder Builder, vars TemplateData) {
 					d.log('process literal "%s" from %d, length %d', short_t, s, l)
 					unsafe { builder.write_ptr(t.str + s, l) }

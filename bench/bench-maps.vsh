@@ -75,11 +75,11 @@ struct Data {
 	repo_url        string   = 'https://github.com/prantlf/jsonlint'
 	issues          []string = ['87', '95', '101']
 	breaking_change []string = [
-	"* Although you shouldn't notice any change on the behaviour of the command line, something unexpected might've changed.",
-	'* The default environment recognises only JSON Schema drafts 06 and 07 automatically.',
-	'* Dropped support for Node.js 12. The minimum supported version is Node.js 14.',
-	'* If you used the property "exzerpt" from the parsing error object, you have to change it to "excerpt".',
-]
+		"* Although you shouldn't notice any change on the behaviour of the command line, something unexpected might've changed.",
+		'* The default environment recognises only JSON Schema drafts 06 and 07 automatically.',
+		'* Dropped support for Node.js 12. The minimum supported version is Node.js 14.',
+		'* If you used the property "exzerpt" from the parsing error object, you have to change it to "excerpt".',
+	]
 }
 
 fn (d &Data) has(name string) bool {
