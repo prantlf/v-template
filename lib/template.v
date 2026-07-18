@@ -639,14 +639,17 @@ fn get_values(name string, vars TemplateData, vals []string, idxs []int) []strin
 	return match inner_name {
 		'#index' {
 			if depth < idxs.len {
-				[(idxs[depth] + 1).str()]
+				// workaround for a bug in v - do not put the expression to an array literal
+				value := (idxs[depth] + 1).str()
+				[value]
 			} else {
 				[]string{}
 			}
 		}
 		'#value' {
 			if depth < vals.len {
-				[vals[depth]]
+				value := vals[depth]
+				[value]
 			} else {
 				[]string{}
 			}
