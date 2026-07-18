@@ -1,5 +1,16 @@
 # Changes
 
+## [0.5.0](https://github.com/prantlf/v-template/compare/v0.4.4...v0.5.0) (2026-07-18)
+
+### Features
+
+* Adapt to breaking changes in V ([5413323](https://github.com/prantlf/v-template/commit/5413323f9348605dfdd5dbf0ebf22b02f646c010))
+* Adapt to breaking changes in V II ([e81b4f8](https://github.com/prantlf/v-template/commit/e81b4f869165e2ad4403eab154b662c5bc38e69e))
+
+### Bug Fixes
+
+* Workaround for a bug in V ([9d6ca43](https://github.com/prantlf/v-template/commit/9d6ca4336aacd9615354e2527b6df71baea3faf7))
+
 ## [0.4.4](https://github.com/prantlf/v-template/compare/v0.4.3...v0.4.4) (2024-11-16)
 
 ### Bug Fixes
